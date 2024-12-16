@@ -1,27 +1,33 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
 import "./interfaces/IAuction.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Auction is IAuction, ReentrancyGuard, Ownable {
+    constructor() Ownable(msg.sender) {
+    }
+
+    // Structs
     struct AuctionInfo {
         string description;
         address owner;
         uint256 startingPrice;
-        uint256 hisghestBid;
+        uint256 highestBid;
         address highestBidder;
         uint256 endTime;
         bool ended;
-        bool FundsDistributed;
+        bool fundsDistributed;
     }
-
+    
+    // State variables
     uint256 private _auctionIdCounter;
-    mapping (uint256 => AuctionInfo) public auctions;
-    mapping (uint256 => mapping (address => uint256)) public bids;
-
+    mapping(uint256 => AuctionInfo) public auctions;
+    mapping(uint256 => mapping(address => uint256)) public bids;
+    
+    // Custom errors
     error AuctionNotFound();
     error AuctionAlreadyEnded();
     error AuctionNotEnded();
@@ -30,16 +36,17 @@ contract Auction is IAuction, ReentrancyGuard, Ownable {
     error FundsAlreadyDistributed();
     error NotAuctionOwner();
     error TransferFailed();
-
+    
+    // Modifiers
     modifier auctionExists(uint256 auctionId) {
-        if (auctions[auctionId].owner == address(0)){
+        if (auctions[auctionId].owner == address(0)) {
             revert AuctionNotFound();
         }
         _;
     }
-
+    
     modifier auctionActive(uint256 auctionId) {
-        if (auctions[auctionId].ended){
+        if (auctions[auctionId].ended) {
             revert AuctionAlreadyEnded();
         }
         if (block.timestamp >= auctions[auctionId].endTime) {
@@ -47,14 +54,15 @@ contract Auction is IAuction, ReentrancyGuard, Ownable {
         }
         _;
     }
-
+    
     modifier auctionEnded(uint256 auctionId) {
         if (!auctions[auctionId].ended && block.timestamp < auctions[auctionId].endTime) {
             revert AuctionNotEnded();
         }
         _;
     }
-
+    
+    // Implementation functions
     function createAuction(
         string memory description,
         uint256 startingPrice,
@@ -189,5 +197,4 @@ contract Auction is IAuction, ReentrancyGuard, Ownable {
     {
         return bids[auctionId][bidder];
     }
-
 }
